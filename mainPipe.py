@@ -28,8 +28,16 @@ def find_r2_file(filename):
         return file_path_r2
     else: 
         return None
+    
+def subSampDic(file_dict, input1, input2):
+    # Remove the "R1" substring from the input1 file path
+    modified_key = os.path.basename(input1).replace('_R1', '')
+    # Store the tuple of file paths in the dictionary with the modified key
+    file_dict[modified_key] = (input1, input2)
+    # Access the tuple of file paths using the modified key
+    file_paths = file_dict[modified_key]
 
-def subsampler(input_file_path1,n,filepath):
+def subsampler(input_file_path1,n,filepath, dict):
     if 'R1' in input_file_path1 and "gz" in input_file_path1:
         input_file_path2 = find_r2_file(input_file_path1)
         print("!!  Subsampling has started for " +input_file_path1)
@@ -78,17 +86,21 @@ def subsampler(input_file_path1,n,filepath):
         with open(output_file_path1, 'w') as output_file1, open(output_file_path2, 'w') as output_file2:
             SeqIO.write(random_reads1, output_file1, 'fastq')
             SeqIO.write(random_reads2, output_file2, 'fastq')
-        print("!!! " +input_file_path2+" has been successfully subsampled!")
-        print("!!! " +input_file_path1+" has been successfully subsampled!")
+        subSampDic(dict, output_file_path1, output_file_path2)
+        print("!!! " +input_file_path2+" has been successfully subsampled and stored!")
+        print("!!! " +input_file_path1+" has been successfully subsampled and stored!")
         return output_file_path1, output_file_path2
+
 def mainpipe(folder, reads, output_folder):
+    mainDic = {}
     print("!!! SEARCHING FOR FASTQ FILES")
     fastqFolder = get_fastq_gz_files(folder)
     print("!!! ALL FASTQ FILES HAVE BEEN OBTAINED")
     print("!!! SUBSAMPLING HAS BEEN INITATED")
     for files in fastqFolder:
-        subsampler(files,reads,output_folder)
+        subsampler(files,reads,output_folder, mainDic)
     print("!!! Subsampling has been completed :D")
+    print(mainDic)
 
 # Create an ArgumentParser object
 parser = argparse.ArgumentParser(description="Select random reads from a fastq file")
