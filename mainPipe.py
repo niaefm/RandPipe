@@ -79,9 +79,9 @@ def mainpipe(folder, reads, output_folder):
 parser = argparse.ArgumentParser(description="Select random reads from a fastq file")
 
 # Add an argument for the fastq file path
-parser.add_argument("input_folder", help="Please type input folder")
+parser.add_argument("input_folder", help="Files you want to be processed")
 parser.add_argument("reads", help="Number of samples for each file")
-parser.add_argument("output_folder", help="Number of samples for each file")
+parser.add_argument("output_folder", help="Where you want your finished files to be")
 
 # Parse the command-line arguments
 args = parser.parse_args()
