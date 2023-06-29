@@ -6,7 +6,16 @@ import shutil
 import subprocess
 import gzip
 
-#SELECTS RANDOM SEQUENCE FOR R1 FILES AND SEARCHES FOR R2 FILE WITH SAME NAME
+def get_fastq_gz_files(folder_path):
+    fastq_gz_files = []
+
+    for root, dirs, files in os.walk(folder_path):
+        for file_name in files:
+            if file_name.lower().endswith('.fastq.gz'):
+                fastq_gz_files.append(os.path.join(root, file_name))
+                print(file_name + " has been identified as a fastq.gz file")
+    return fastq_gz_files
+
 def find_r2_file(filename):
     directory = os.path.dirname(filename)
     basename = os.path.basename(filename)
@@ -14,90 +23,67 @@ def find_r2_file(filename):
     file_path_r2 = os.path.join(directory, filename_r2)
 
     if os.path.isfile(file_path_r2):
+        print(filename+"has been identified as the forward strand while "+file_path_r2+" has been identified as the reverse strand")
         return file_path_r2
-    else:
+    else: 
         return None
 
-def copy_and_rename_file(file_path, sample):
-    # Split the file path into directory and filename
-    directory, filename = os.path.split(file_path)
-    
-    # Append the sample to the filename
-    new_filename = f"{filename.replace('.fastq', '')}_{sample}.fastq"
-    
-    # Create the new file path for the copied and renamed file
-    new_file_path = os.path.join(directory, new_filename)
-    
-    # Create a copy of the file
-    shutil.copyfile(file_path, new_file_path)
-    
-    # Return the new file path
-    return new_file_path
+def subsampler(input_file_path1,n,filepath):
+    if 'R1' in input_file_path1 and "gz" in input_file_path1:
+        input_file_path2 = find_r2_file(input_file_path1)
+        # Unzip the input file
+        with gzip.open(input_file_path1, 'rt') as gz_file:
+            unzipped_content = gz_file.read()
+        # Write the unzipped content to the specified filepath
+        output_file_path1 = os.path.join(filepath, os.path.splitext(os.path.basename(input_file_path1))[0] + '_subsample.fasta')
+        with open(output_file_path1, 'w') as output_file:
+            output_file.write(unzipped_content)
+        # Empty the unzipped file
+        open(output_file_path1, 'w').close()
+        print(input_file_path1+ " has been successfully been created and emptied")
+        # Unzip the input file
+        with gzip.open(input_file_path2, 'rt') as gz_file:
+            unzipped_content = gz_file.read()
+        # Write the unzipped content to the specified filepath
+        output_file_path2 = os.path.join(filepath, os.path.splitext(os.path.basename(input_file_path2))[0] + '_subsample.fasta')
+        with open(output_file_path2, 'w') as output_file:
+            output_file.write(unzipped_content)
+        # Empty the unzipped file
+        open(output_file_path2, 'w').close()
+        print(input_file_path2+ " has been successfully been created and emptied")
 
-# Takes R1 and R2 fastq file and selects n random reads from it and puts them into an output file
-def select_random_reads(input_file1, input_file2, output_file1, output_file2, n):
-    records1 = list(SeqIO.parse(input_file1, "fastq"))
-    records2 = list(SeqIO.parse(input_file2, "fastq"))
-    
-    selected_records = random.sample(records1, n)
-    selected_ids = set(record.id for record in selected_records)
-    
-    selected_records2 = [record for record in records2 if record.id in selected_ids]
-    
-    with open(output_file1, 'w') as f1:
-        SeqIO.write(selected_records, f1, "fastq")
-        
-    with open(output_file2, 'w') as f2:
-        SeqIO.write(selected_records2, f2, "fastq")
-#CHECKS IF FILE IS FASTQ and unzips the fastq.gz file into fastq and process the new fastq file into a new sample file
-def unzip_fastq_gz(file_path):
-    if file_path.endswith(".gz"):
-        output_file = os.path.splitext(file_path)[0]  # Remove '.gz' extension from the output file
+        input_file_path2 = find_r2_file(input_file_path1)
+        print(input_file_path1+" and "+input_file_path2+" is being processed")
+        n=int(n)
+        random_indices = random.sample(range(n), n)
 
-        with gzip.open(file_path, 'rb') as gz_file, open(output_file, 'wb') as output:
-            output.write(gz_file.read())
+        with gzip.open(input_file_path1, 'rt') as input_file1, gzip.open(input_file_path2, 'rt') as input_file2:
+            records1 = list(SeqIO.parse(input_file1, 'fastq'))
+            records2 = list(SeqIO.parse(input_file2, 'fastq'))
 
-        print(f"File {file_path} decompressed successfully.")
-    else:
-        print(f"Skipping file {file_path} - not a .gz file.")
+            random_reads1 = [records1[i] for i in random_indices]
+            random_reads2 = [records2[i] for i in random_indices]
 
-def process_folder(folder_path):
-    for file_name in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, file_name)
-        if os.path.isfile(file_path):
-            unzip_fastq_gz(file_path)
-#This iterates through the processed folder to select random reads and add them to an output file for R1 and R2
-def mainPipe(folder_path):
-    for filename in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, filename)  # Get the full file path
-
-        if 'R1' not in file_path or 'gz' in file_path:
-            print(f"Skipping file: {filename}. File name must contain 'R1' and not contain 'gz'")
-            continue
-
-        # Search for R2 file
-        R2_file = find_r2_file(file_path)
-
-        # Create new file paths for R1 and R2 with the sample string appended
-        reformR1_file = copy_and_rename_file(file_path, 'sample')
-        reformR2_file = copy_and_rename_file(R2_file, 'sample')
-
-        # Select random reads from the original file and write them to the new file
-        select_random_reads(file_path, R2_file, reformR1_file, reformR2_file, args.reads)
+        with open(output_file_path1, 'w') as output_file1, open(output_file_path2, 'w') as output_file2:
+            SeqIO.write(random_reads1, output_file1, 'fastq')
+            SeqIO.write(random_reads2, output_file2, 'fastq')
+        print(input_file_path1+" and "+input_file_path2+" has been successfully subsampled")
+        return output_file_path1, output_file_path2
+def mainpipe(folder, reads, output_folder):
+    fastqFolder = get_fastq_gz_files(folder)
+    for files in fastqFolder:
+        subsampler(files,reads,output_folder)
+    print("Subsampling has been completed")
 
 # Create an ArgumentParser object
 parser = argparse.ArgumentParser(description="Select random reads from a fastq file")
 
 # Add an argument for the fastq file path
-parser.add_argument("folder", help="Please type input folder")
-
-# Add an argument for the number of reads to select
-parser.add_argument("reads", type=int, help="number of reads to select")
+parser.add_argument("input_folder", help="Please type input folder")
+parser.add_argument("reads", help="Number of samples for each file")
+parser.add_argument("output_folder", help="Number of samples for each file")
 
 # Parse the command-line arguments
 args = parser.parse_args()
 
-process_folder(args.folder)
-mainPipe(args.folder)
-
-
+mainpipe(args.input_folder,args.reads,args.output_folder)
