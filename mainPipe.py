@@ -39,6 +39,14 @@ def subSampDic(file_dict, input1, input2):
     # Access the tuple of file paths using the modified key
     file_paths = file_dict[modified_key]
 
+
+def create_folder_if_not_exists(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        print(f"!!! Created folder: {folder_path}")
+    else:
+        print(f"!!! Folder already exists: {folder_path}")
+
 def subsampler(input_file_path1,n,filepath, dict):
     if 'R1' in input_file_path1 and "gz" in input_file_path1:
         input_file_path2 = find_r2_file(input_file_path1)
@@ -95,6 +103,7 @@ def subsampler(input_file_path1,n,filepath, dict):
 
 def mainpipe(folder, reads, output_folder):
     mainDic = {}
+    create_folder_if_not_exists(output_folder)
     print("!!! SEARCHING FOR FASTQ FILES")
     fastqFolder = get_fastq_gz_files(folder)
     print("!!! ALL FASTQ FILES HAVE BEEN OBTAINED")
@@ -107,15 +116,18 @@ def mainpipe(folder, reads, output_folder):
 # Create an ArgumentParser object
 parser = argparse.ArgumentParser(description="Select random reads from a fastq file")
 
-# Add an argument for the fastq file path
+# Add an argument for the input folder path
 parser.add_argument("input_folder", help="Files you want to be processed")
-parser.add_argument("reads", help="Number of samples for each file")
+
+# Add an optional argument for the number of reads with a default value of 1000
+parser.add_argument("--reads", help="Number of samples for each file", type=int, default=1000)
+
+# Add an argument for the output folder path
 parser.add_argument("output_folder", help="Where you want your finished files to be")
 
 # Parse the command-line arguments
 args = parser.parse_args()
 
 mainpipe(args.input_folder,args.reads,args.output_folder)
-
 
 
