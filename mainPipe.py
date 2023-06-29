@@ -50,6 +50,9 @@ def create_folder_if_not_exists(folder_path):
 def subsampler(input_file_path1,n,filepath, dict):
     if 'R1' in input_file_path1 and "gz" in input_file_path1:
         input_file_path2 = find_r2_file(input_file_path1)
+        if input_file_path2 == None:
+            print("ERROR NO R2 FILE FOUND")
+            exit(1)
         print("!!  Subsampling has started for " +input_file_path1)
         print("!!  Subsampling has started for " +input_file_path2)
         # Unzip the input file
@@ -100,6 +103,8 @@ def subsampler(input_file_path1,n,filepath, dict):
         print("!!! " +input_file_path2+" has been successfully subsampled and stored!")
         print("!!! " +input_file_path1+" has been successfully subsampled and stored!")
         return output_file_path1, output_file_path2
+    else:
+        print("ERROR NO R1 FILE FOUND")
 
 def mainpipe(folder, reads, output_folder):
     mainDic = {}
@@ -129,5 +134,8 @@ parser.add_argument("output_folder", help="Where you want your finished files to
 args = parser.parse_args()
 
 mainpipe(args.input_folder,args.reads,args.output_folder)
+
+
+
 
 
