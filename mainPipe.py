@@ -37,23 +37,30 @@ def subsampler(input_file_path1,n,filepath):
         # Unzip the input file
         with gzip.open(input_file_path1, 'rt') as gz_file:
             unzipped_content = gz_file.read()
+        # Remove "fastq" from the filename
+        filename_without_extension = os.path.splitext(os.path.basename(input_file_path1))[0]
+        new_filename = filename_without_extension.replace("fastq", "") + "_sample.fastq"
         # Write the unzipped content to the specified filepath
-        output_file_path1 = os.path.join(filepath, os.path.splitext(os.path.basename(input_file_path1))[0] + '_subsample.fasta')
+        output_file_path1 = os.path.join(filepath, new_filename)
         with open(output_file_path1, 'w') as output_file:
             output_file.write(unzipped_content)
         # Empty the unzipped file
         open(output_file_path1, 'w').close()
-        print("    Empty subfile for "+input_file_path1+ " has been successfully been created!")
+        print("Empty subfile for " + input_file_path1 + " has been successfully created!")
+
         # Unzip the input file
         with gzip.open(input_file_path2, 'rt') as gz_file:
             unzipped_content = gz_file.read()
+        # Remove "fastq" from the filename
+        filename_without_extension = os.path.splitext(os.path.basename(input_file_path2))[0]
+        new_filename = filename_without_extension.replace("fastq", "") + "_sample.fastq"
         # Write the unzipped content to the specified filepath
-        output_file_path2 = os.path.join(filepath, os.path.splitext(os.path.basename(input_file_path2))[0] + '_subsample.fasta')
+        output_file_path2 = os.path.join(filepath, new_filename)
         with open(output_file_path2, 'w') as output_file:
             output_file.write(unzipped_content)
         # Empty the unzipped file
         open(output_file_path2, 'w').close()
-        print("    Empty subfile for "+input_file_path2+ " has been successfully been created!")
+        print("Empty subfile for " + input_file_path2 + " has been successfully created!")
 
         input_file_path2 = find_r2_file(input_file_path1)
         print("    "+input_file_path1+" is being processed")
@@ -95,7 +102,6 @@ parser.add_argument("output_folder", help="Where you want your finished files to
 args = parser.parse_args()
 
 mainpipe(args.input_folder,args.reads,args.output_folder)
-
 
 
 
