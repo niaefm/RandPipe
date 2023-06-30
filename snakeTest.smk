@@ -1,9 +1,23 @@
 import os
-
+import pandas as pd
+import matplotlib.pyplot as plt
 
 rule all:
     input:
         expand("alignedReads/{sample}.sam", sample=os.listdir("fastq_folder"))
+
+
+rule extract_fastq:
+    input:
+        gz_files=expand("input_folder/{sample}.fastq.gz", sample=os.listdir("input_folder"))
+    output:
+        "fastq_folder"
+    params:
+        input_files="{input.gz_files}",
+        output_folder="{output}",
+        reads=100
+    shell:
+        "python mainPipe.py --input {params.input_files} --reads {params.reads} --output {params.output_folder}"
 
 rule index_reference_genome:
     input:
@@ -26,14 +40,39 @@ rule align_reads:
         "aligned_reads/{sample}.sam"
     shell:
         "bowtie2 -x {input.reference} -U {input.fastq_files} -S {output}"
-rule extract_fastq:
+
+rule create_table:
     input:
-        gz_files=expand("input_folder/{sample}.fastq.gz", sample=os.listdir("input_folder"))
+        aligned_files=expand("aligned_reads/{sample}.sam", sample=os.listdir("fastq_folder"))
     output:
-        "fastq_folder"
-    params:
-        input_files="{input.gz_files}",
-        output_folder="{output}",
-        reads=100
-    shell:
-        "python mainPipe.py --input {params.input_files} --reads {params.reads} --output {params.output_folder}"
+        "alignment_summary.csv",
+        "alignment_plot.png"
+    run:
+        summary = []
+        for aligned_file in input.aligned_files:
+            sample = os.path.basename(aligned_file).split(".")[0]
+            count_matched = 0
+            count_unmatched = 0
+            with open(aligned_file, "r") as file:
+                for line in file:
+                    if not line.startswith("@"):
+                        if line.split("\t")[1] != "4":
+                            count_matched += 1
+                        else:
+                            count_unmatched += 1
+            summary.append((sample, count_matched, count_unmatched))
+        
+        df = pd.DataFrame(summary, columns=["Sample", "Matched Reads", "Unmatched Reads"])
+        df.to_csv(output[0], index=False)
+
+        # Plotting
+        plt.figure(figsize=(10, 6))
+        plt.bar(df["Sample"], df["Matched Reads"], label="Matched Reads")
+        plt.bar(df["Sample"], df["Unmatched Reads"], bottom=df["Matched Reads"], label="Unmatched Reads")
+        plt.xlabel("Sample")
+        plt.ylabel("Number of Reads")
+        plt.title("Read Alignment Summary")
+        plt.legend()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(output[1])
