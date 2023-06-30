@@ -26,3 +26,14 @@ rule align_reads:
         "aligned_reads/{sample}.sam"
     shell:
         "bowtie2 -x {input.reference} -U {input.fastq_files} -S {output}"
+rule extract_fastq:
+    input:
+        gz_files=expand("input_folder/{sample}.fastq.gz", sample=os.listdir("input_folder"))
+    output:
+        "fastq_folder"
+    params:
+        input_files="{input.gz_files}",
+        output_folder="{output}",
+        reads=100
+    shell:
+        "python mainPipe.py --input {params.input_files} --reads {params.reads} --output {params.output_folder}"
