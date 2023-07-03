@@ -1,23 +1,37 @@
 import os
 import yaml
 
-# Load configuration from the config file
+# Open and load the config.yaml file
 with open("config.yaml", "r") as config_file:
     config = yaml.safe_load(config_file)
 
-# Retrieve the value of 'input_folder' from the config dictionary
+# Generate the variables from the loaded configuration
 input_folder = config["input_folder"]
+reads = config["total_reads_per_sample"]
+refGenome = config["reference_genome"]
 
 rule all:
     input:
-        "fastq_folder"
+        "fastq_folder",
+        "index_genome"
 
 rule extract_fastq:
     input:
-        input_folder
+        input_folder=input_folder
     output:
-        "fastq_folder"
+        directory("fastq_folder")
+    params:
+        reads=reads
     shell:
         """
-        python3 mainPipe.py {input} {output}
+        python3 Scripts/fastqProcess.py {input} {output} {params.reads}
+        """
+rule index_reference_genome:
+    input:
+        refGenome=refGenome
+    output:
+        directory("index_genome")
+    shell:
+        """
+        python3 Scripts/index.py {input}
         """

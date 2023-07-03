@@ -1,0 +1,4 @@
+# config.yaml
+input_folder: "samples"
+reference_genome: "genomeTest.fasta"
+total_reads_per_sample: "50"
