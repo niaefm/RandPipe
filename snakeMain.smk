@@ -13,7 +13,9 @@ refGenome = config["reference_genome"]
 rule all:
     input:
         "fastq_folder",
-        "index_genome"
+        "index_genome",
+        "sam_folder",
+        "final_plot"
 
 rule extract_fastq:
     input:
@@ -34,4 +36,23 @@ rule index_reference_genome:
     shell:
         """
         python3 Scripts/index.py {input}
+        """
+rule align_reads:
+    input:
+        index = "index_genome",
+        fastq = "fastq_folder"
+    output:
+        directory("sam_folder")
+    shell:
+       """
+       python3 Scripts/align.py {input.fastq} {output} {input.index}
+       """
+rule generate_table:
+    input:
+        "sam_folder"
+    output:
+        directory("final_plot")
+    shell:
+        """
+        python3 Scripts/genTable.py {input} {output}
         """
